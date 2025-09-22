@@ -31,6 +31,8 @@ export function useMixedRotation({
   const [isPaused, setIsPaused] = useState(false)
   const [animationKey, setAnimationKey] = useState(0)
   const [isPageVisible, setIsPageVisible] = useState(true)
+  const [hasUserActivation, setHasUserActivation] = useState(false)
+  let fallbackTimer: any = null // Declare fallbackTimer here
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -50,6 +52,13 @@ export function useMixedRotation({
       console.log("[v0] Window blurred")
     }
 
+    const handleUserActivation = () => {
+      if (!hasUserActivation) {
+        console.log("[v0] User activation detected, enabling slideshow")
+        setHasUserActivation(true)
+      }
+    }
+
     if (typeof document !== "undefined") {
       document.addEventListener("visibilitychange", handleVisibilityChange)
       document.addEventListener("webkitvisibilitychange", handleVisibilityChange)
@@ -58,6 +67,20 @@ export function useMixedRotation({
       window.addEventListener("blur", handleBlur)
 
       handleVisibilityChange()
+
+      // Listen for any user interaction to enable slideshow
+      const events = ["click", "keydown", "touchstart", "mousedown"]
+      events.forEach((event) => {
+        document.addEventListener(event, handleUserActivation, { once: true, passive: true })
+      })
+
+      // Auto-activate after a delay as fallback (Chrome 94 might allow this)
+      fallbackTimer = setTimeout(() => {
+        if (!hasUserActivation) {
+          console.log("[v0] Fallback activation after 2 seconds")
+          setHasUserActivation(true)
+        }
+      }, 2000)
     }
 
     return () => {
@@ -66,9 +89,15 @@ export function useMixedRotation({
         document.removeEventListener("webkitvisibilitychange", handleVisibilityChange)
         window.removeEventListener("focus", handleFocus)
         window.removeEventListener("blur", handleBlur)
+
+        const events = ["click", "keydown", "touchstart", "mousedown"]
+        events.forEach((event) => {
+          document.removeEventListener(event, handleUserActivation)
+        })
+        clearTimeout(fallbackTimer)
       }
     }
-  }, [])
+  }, [hasUserActivation])
 
   useEffect(() => {
     const items: MixedItem[] = []
@@ -175,12 +204,19 @@ export function useMixedRotation({
   }, [])
 
   useEffect(() => {
-    if (isPaused || mixedItems.length <= 1 || !isPageVisible) return
+    if (isPaused || mixedItems.length <= 1 || !isPageVisible || !hasUserActivation) return
 
     const currentItem = mixedItems[currentIndex]
     const interval = currentItem?.type === "slide" ? slideInterval : rotationInterval
 
-    console.log("[v0] Setting timer for", interval, "ms, page visible:", isPageVisible)
+    console.log(
+      "[v0] Setting timer for",
+      interval,
+      "ms, page visible:",
+      isPageVisible,
+      "user activated:",
+      hasUserActivation,
+    )
 
     const timer = setTimeout(() => {
       console.log("[v0] Timer fired, advancing to next item")
@@ -190,7 +226,7 @@ export function useMixedRotation({
     return () => {
       clearTimeout(timer)
     }
-  }, [nextItem, rotationInterval, slideInterval, isPaused, mixedItems, currentIndex, isPageVisible])
+  }, [nextItem, rotationInterval, slideInterval, isPaused, mixedItems, currentIndex, isPageVisible, hasUserActivation])
 
   const currentItem = mixedItems[currentIndex] || null
   const currentInterval = currentItem?.type === "slide" ? slideInterval : rotationInterval
