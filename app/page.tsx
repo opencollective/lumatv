@@ -93,18 +93,6 @@ export default function EventDisplayPage() {
     }
   }
 
-  const handleMouseEnter = () => {
-    if (typeof pause === "function") {
-      pause()
-    }
-  }
-
-  const handleMouseLeave = () => {
-    if (typeof resume === "function") {
-      resume()
-    }
-  }
-
   const loading = eventsLoading || slidesLoading
   const error = eventsError || slidesError
 
@@ -146,7 +134,7 @@ export default function EventDisplayPage() {
   }
 
   return (
-    <div className="fullscreen-display relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+    <div className="fullscreen-display relative">
       <KioskMode onToggleDebug={() => setIsDebugVisible(!isDebugVisible)} />
 
       <div>
