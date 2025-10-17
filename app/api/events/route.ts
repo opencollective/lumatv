@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { LumaApiClient } from "@/lib/luma-api"
 
+export const revalidate = 60 * 60; // revalidate every hour
+
 export async function GET() {
   try {
     // In production, this should come from environment variables
